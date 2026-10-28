@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    container_name: credresolve_app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./credresolve.db
+      - SECRET_KEY=${SECRET_KEY:-credresolve-dev-only-secret-key-change-in-production}
+      - DATA_RAW_DIR=./data/raw
+    volumes:
+      - ./data:/app/data
+      - credresolve_data:/app/
+    restart: unless-stopped
+
+volumes:
+  credresolve_data:
