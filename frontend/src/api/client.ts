@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { 
-  User, DemoUser, DashboardData, PaginatedResult, 
-  AccountItem, BorrowerItem, PaymentItem, PTPItem, 
-  AgentItem, CampaignItem, CallItem, FieldVisitItem, 
-  ComplaintItem, DataQualityReport, ExplainabilityReport 
+import {
+  User, DemoUser, DashboardData, PaginatedResult,
+  AccountItem, BorrowerItem, PaymentItem, PTPItem,
+  AgentItem, CampaignItem, CallItem, FieldVisitItem,
+  ComplaintItem, DataQualityReport, ExplainabilityReport
 } from '../types';
 
 const api = axios.create({

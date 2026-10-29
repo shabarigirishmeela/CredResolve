@@ -19,6 +19,7 @@ import { FieldVisits } from './pages/FieldVisits';
 import { ComplaintsCompliance } from './pages/ComplaintsCompliance';
 import { DataQuality } from './pages/DataQuality';
 import { ReportsSettings } from './pages/ReportsSettings';
+import { SmartDialer } from './pages/SmartDialer';
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -64,6 +65,7 @@ const MainApp: React.FC = () => {
       case 'data-quality': return 'Data Quality, Pipeline Health & Auditing';
       case 'reports': return 'Reports, CSV Exports & Methodologies';
       case 'settings': return 'Platform & Engine Configuration';
+      case 'smart-dialer': return 'SmartDialer — Predictive Dialing Engine';
       default: return 'CredResolve Intelligence';
     }
   };
@@ -84,6 +86,7 @@ const MainApp: React.FC = () => {
       case 'data-quality': return 'Audit telemetry across 17 datasets with duplicate purging and timestamp reconciliation';
       case 'reports': return 'Streamed CSV downloads and documented financial recovery metric formulas';
       case 'settings': return 'Configurable prioritization engine weights and contact window parameters';
+      case 'smart-dialer': return 'Progressive & Predictive outbound dialing with Safety Controller, mock providers, and simulation scenarios';
       default: return '';
     }
   };
@@ -117,6 +120,7 @@ const MainApp: React.FC = () => {
             {currentTab === 'data-quality' && <DataQuality />}
             {currentTab === 'reports' && <ReportsSettings />}
             {currentTab === 'settings' && <ReportsSettings />}
+            {currentTab === 'smart-dialer' && <SmartDialer />}
           </div>
         </main>
 

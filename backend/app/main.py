@@ -18,11 +18,27 @@ from app.api import (
     field_visits,
     complaints,
     data_quality,
-    reports
+    reports,
+    dialer,
 )
 
-# Create tables if not existing
+# Create ALL tables (collections platform + SmartDialer) if not existing
 Base.metadata.create_all(bind=engine)
+
+# Run SmartDialer crash recovery on startup to reconcile stale reservations
+def _run_startup_recovery():
+    try:
+        from app.core.database import SessionLocal
+        from app.services.event_processor import recover_stale_state
+        _db = SessionLocal()
+        try:
+            recover_stale_state(_db)
+        finally:
+            _db.close()
+    except Exception:
+        pass  # Non-fatal: tables may not exist on first run
+
+_run_startup_recovery()
 
 def seed_demo_users_if_needed():
     """Ensure standard demo accounts exist in development environments."""
@@ -90,6 +106,7 @@ app.include_router(field_visits.router, prefix=api_v1)
 app.include_router(complaints.router, prefix=api_v1)
 app.include_router(data_quality.router, prefix=api_v1)
 app.include_router(reports.router, prefix=api_v1)
+app.include_router(dialer.router, prefix=api_v1)
 
 @app.get("/api/health")
 def health():
