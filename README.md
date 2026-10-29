@@ -1,250 +1,508 @@
-# CredResolve Intelligence — AI-Powered Collections & Recovery Platform
+# CredResolve Intelligence — SmartDialer
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/Frontend-React_19_TypeScript-61DAFB.svg?logo=react)](https://react.dev)
-[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind_CSS_v4-38B2AC.svg?logo=tailwind-css)](https://tailwindcss.com)
-[![SQLite](https://img.shields.io/badge/Database-SQLite_Indexed-003B57.svg?logo=sqlite)](https://sqlite.org)
-[![Tests](https://img.shields.io/badge/Tests-16%20Passed-brightgreen.svg)]()
-[![Compliance](https://img.shields.io/badge/Compliance-RBI_Fair_Practices_Active-success.svg)]()
+A SmartDialer prototype for collections and recovery operations, designed to improve agent utilization while preserving deterministic call-safety controls.
 
-**CredResolve Intelligence** is a production-grade, enterprise FinTech collections and debt recovery intelligence platform built for digital lenders, commercial banks, NBFCs, and debt resolution agencies.
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi)
+![React](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-61DAFB?logo=react)
+![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python)
+![Tests](https://img.shields.io/badge/SmartDialer%20Tests-63%20Passed-brightgreen)
 
-Engineered to operate on real, noisy collections event streams, the platform ingests, cleans, deduplicates, and cross-references **17 relational datasets** across **639,185 raw records**, powering an explainable rule-based prioritization engine, omnichannel communications tracking, borrower 360° audit trails, and strict regulatory compliance guardrails (RBI Fair Practices Code & Consumer Protection Act 2019).
+## Table of Contents
 
----
-
-## 🌟 Key System Capabilities
-
-1. **Deterministic Data Cleaning & Verification Pipeline**:
-   - Ingests and reconciles all 17 relational tables from the 30k collections dataset.
-   - Automatically eliminates **51,035 duplicate rows** and snapshots (including repeated agent states and duplicate payment events).
-   - Normalizes legacy disposition codes (`PROMISE_TO_PAY` → `PTP`).
-   - Standardizes disparate timezones (`UTC`, `Asia/Kolkata`, `Asia/Dubai`) to ISO-8601 UTC while preserving local borrower time for contact window verification.
-   - Synthesizes 2,913 unassigned borrower profiles to guarantee 100% referential integrity across all accounts and events.
-
-2. **Intelligent Collection Prioritization Engine**:
-   - Transparent, mathematical multi-factor scoring (0–100) combining **Days Past Due (25%)**, **Outstanding Exposure (25%)**, **Risk Segment (15%)**, **PTP Commitment History (15%)**, and **Contact Responsiveness (20%)**.
-   - Generates priority tiers (**CRITICAL**, **HIGH**, **MEDIUM**, **LOW**) and tailored next-action recommendations.
-   - Full explainability modal breaking down exact point contributions and mathematical rationales for every prioritized account.
-
-3. **Regulatory & Compliance Guardrails**:
-   - **Fair Practices Code Dispute Hold**: Accounts with open high/critical grievances (Harassment, Dispute, Privacy, DND) automatically freeze with a mandatory collection pause (`compliance_hold = True`).
-   - **Permissible Contact Hours Enforcement**: Indian banking regulations prohibit collection contact outside **08:00 AM – 07:00 PM** borrower local time. The engine verifies timezone windows in real-time.
-   - **Data Privacy & PII Masking**: Borrower phone numbers (`+91-XXXXX-1234`) and email addresses (`use***@example.com`) are masked across all standard UI views and telemetry logs.
-
-4. **14 Dedicated Operational & Analytics Views**:
-   - **Login**: Secure role-based JWT authentication with 1-click profiles for 4 corporate roles.
-   - **Executive Recovery Dashboard**: Core KPIs (Total Accounts, Exposure, Delinquent Overdue, Realized Collections, Collection Rate, PTP Kept Rate), recovery trend area charts, credit risk pie charts, product distributions.
-   - **Collection Work Queue**: Live prioritized queue with priority badges, explainability triggers, and quick action simulation (Calls, WhatsApp, Field Visits, Compliance Review).
-   - **Borrower Directory**: Searchable directory with 360° drawer displaying linked loans, payment history, contact attempts, PTPs, and filed grievances.
-   - **Account Portfolio**: Full 30,000-account registry with chronological lifecycle status transition timelines (`account_status_history`).
-   - **Payment Reconciliation**: Reconciled transaction ledger with idempotency checks, payment method distributions, and duplicate reference isolation.
-   - **Promises to Pay (PTP)**: Commitment tracking, fulfillment conversion rates, broken PTP default escalations, and channel attribution.
-   - **Agent Performance**: Productivity scorecards for 1,000 active recovery agents with contact rates, handle times, and PTP conversion leaderboards.
-   - **Campaign Analytics**: Strategy version comparisons across 120 campaigns and cohort engagement tracking.
-   - **Omnichannel Communications**: Funnel analytics across 90k Voice Calls, 60k WhatsApp events, and 45k SMS events with failure telemetry.
-   - **Field Visit Operations**: Verification tracking across 25,000 on-ground dispatches with GPS coordinates and visit outcomes.
-   - **Complaints & Compliance**: Regulatory dispute management with grievance resolution workflows that automatically clear collection pauses.
-   - **Data Quality & Pipeline**: Live pipeline health score (**98.4% / 93.3%**), granular table-by-table audit records, CSV file staging, and repeatable pipeline execution.
-   - **Reports & Settings**: Production CSV exports for Accounts, Payments, Queue, Complaints, and PTP, with documented financial formula definitions.
+- [Overview](#overview)
+- [SmartDialer Features](#smartdialer-features)
+- [Architecture](#architecture)
+- [Dialing Modes](#dialing-modes)
+- [Safety and Correctness](#safety-and-correctness)
+- [Failure Handling](#failure-handling)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Running Tests](#running-tests)
+- [Simulation and Load Testing](#simulation-and-load-testing)
+- [API Documentation](#api-documentation)
+- [Limitations](#limitations)
+- [Documentation](#documentation)
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## Overview
 
+CredResolve is an AI-powered collections and recovery platform. This repository extends the existing application with a SmartDialer functional prototype that automates outbound call allocation for collections agents.
+
+The SmartDialer addresses a core operational challenge: improving agent utilization without allowing more agent-bound outbound calls than the safety rules permit.
+
+The implementation includes:
+
+- Progressive and predictive dialing logic.
+- A separate Safety Controller between pacing decisions and call allocation.
+- Agent and call state machines.
+- Concurrency-aware agent and borrower allocation.
+- Mock telecom provider integrations.
+- Duplicate and out-of-order event handling.
+- Crash recovery and provider circuit-breaker logic.
+- Simulation scenarios, automated tests, and a basic load-testing utility.
+- A React-based SmartDialer interface.
+
+The prototype uses simulated telecom providers. It does not require a live telephony account to demonstrate the main workflows.
+
+## SmartDialer Features
+
+### 1. Progressive Dialing
+
+Progressive dialing follows a conservative allocation strategy: an available agent can be assigned at most one new agent-bound outbound call at a time.
+
+The implementation considers:
+
+- Agent availability and reservation.
+- Borrower selection and allocation.
+- Call initiation and state transitions.
+- Failed call handling.
+- Agent availability changes during call setup.
+
+The purpose is to maintain predictable allocation behavior and avoid overcommitting available agents.
+
+### 2. Predictive Pacing Engine
+
+The pacing engine estimates how aggressively a campaign can dial. It can propose additional calls based on campaign conditions and dialing metrics.
+
+The engine is separate from the mechanism that actually authorizes calls.
+
+A pacing proposal is not permission to initiate a call. Every proposal must pass through the Safety Controller.
+
+### 3. Safety Controller
+
+The Safety Controller acts as a mandatory safety boundary between pacing logic and call allocation.
+
+It can:
+
+- Approve a permitted number of calls.
+- Reduce the proposed number of calls.
+- Reject a request when safety conditions are not met.
+- Fall back to progressive behavior when required.
+
+The controller enforces the available-agent limits and prevents the predictive pacing logic from directly bypassing the safety decision.
+
+### 4. Agent and Call State Machines
+
+Explicit state transitions make the lifecycle of agents and calls easier to validate and recover.
+
+**Agent lifecycle** includes states such as:
+
+`OFFLINE → AVAILABLE → RESERVED → DIALING → CONNECTED → WRAP_UP`
+
+Additional states support situations such as pausing an agent or making an agent unavailable.
+
+**Call lifecycle** includes states such as:
+
+`QUEUED → RESERVED → INITIATED → RINGING → ANSWERED → CONNECTED → COMPLETED`
+
+Failure and cancellation paths are also supported.
+
+The state machines validate transitions so that events cannot freely overwrite the current state.
+
+### 5. Mock Telecom Providers
+
+The application uses a provider abstraction so the dialer does not need to depend on a particular telecom vendor.
+
+The mock providers can simulate different operational behavior, including:
+
+- Successful call initiation.
+- Provider failures and timeouts.
+- Variable response latency.
+- Duplicate events.
+- Events arriving out of order.
+
+These mocks allow failure scenarios to be exercised without placing real calls.
+
+### 6. Event Processing and Recovery
+
+The event-processing components address common distributed-system failure cases:
+
+- Duplicate provider events.
+- Out-of-order events.
+- Repeated state-transition attempts.
+- Stale reservations.
+- Worker interruptions during call setup.
+- Provider health changes.
+
+The implementation includes recovery logic and circuit-breaker behavior to reduce the risk of continuing to send new calls through an unhealthy provider.
+
+### 7. Simulation and Dashboard
+
+The SmartDialer interface provides workflows for configuring and running dialing sessions, inspecting agent and call activity, and exploring simulation results.
+
+The simulator supports scenarios with different answer rates, talk times, and provider conditions.
+
+The interface is intended for demonstration and evaluation of the prototype rather than as a production telephony console.
+
+---
+
+## Architecture
+
+The main call flow is:
+
+```text
+Campaign
+   |
+   v
+Pacing Engine
+(Progressive / Predictive)
+   |
+   v
+Safety Controller
+(Approve / Reduce / Reject / Fallback)
+   |
+   v
+Call Allocator
+(Agent and Borrower Reservation)
+   |
+   v
+Mock Telecom Provider
+   |
+   v
+Event Processor
+(State Updates / Deduplication / Recovery)
 ```
-CredResolve Intelligence
-├── frontend/               # React 19 + TypeScript + Vite + Tailwind CSS v4
-│   ├── src/
-│   │   ├── api/client.ts   # Typed Axios HTTP Client with JWT interceptors
-│   │   ├── components/     # PriorityBadge, StatusBadge, MetricCard, ExplainabilityModal, BorrowerDrawer, Sidebar, Header
-│   │   ├── context/        # AuthContext for role-based session state
-│   │   ├── pages/          # 14 operational and analytics dashboard views
-│   │   ├── types/          # Strict TypeScript interfaces matching backend DTOs
-│   │   ├── App.tsx         # Unified dashboard shell
-│   │   └── index.css       # Tailwind v4 theme tokens and custom glassmorphism
-│   ├── vite.config.ts      # Vite config with backend proxy and Tailwind v4
-│   └── package.json
-│
-├── backend/                # Python FastAPI REST API Backend
+
+### Component Responsibilities
+
+| Component | Responsibility |
+|---|---|
+| Campaign/session management | Manages dialing sessions and campaign configuration |
+| Progressive Dialer | Proposes calls based on available agents |
+| Pacing Engine | Calculates proposed dialing volume |
+| Safety Controller | Enforces safety limits before call allocation |
+| Call Allocator | Coordinates agent and borrower reservations and call initiation |
+| State Machines | Validate agent and call lifecycle transitions |
+| Telecom Providers | Abstract provider behavior and simulate call outcomes |
+| Event Processor | Handles provider events, duplicate delivery, and recovery |
+| Simulation | Runs scenarios to examine pacing and dialing behavior |
+| React Frontend | Provides the SmartDialer user interface |
+
+### Architectural Decision
+
+The prototype uses a modular application structure instead of introducing unnecessary microservices or distributed infrastructure.
+
+This keeps the implementation straightforward to run locally while separating the main responsibilities of pacing, safety, allocation, provider integration, and event processing.
+
+See [`docs/architecture_adr.md`](docs/architecture_adr.md) for the architecture decision record and [`docs/architecture_diagrams.md`](docs/architecture_diagrams.md) for additional diagrams.
+
+---
+
+## Dialing Modes
+
+### Progressive Mode
+
+Progressive mode prioritizes predictable allocation.
+
+For example, if 10 agents are available, the system must not assign more than 10 simultaneous agent-bound outbound calls under the applicable allocation constraints.
+
+### Predictive Mode
+
+Predictive mode can propose additional calls based on its pacing calculation.
+
+The Safety Controller independently evaluates that proposal against current availability and other safety constraints. If the proposed volume exceeds what is permitted, it must be reduced, rejected, or handled using the configured fallback behavior.
+
+Predictive pacing must not directly invoke the telecom provider.
+
+### Why Keep Them Separate?
+
+The separation allows the pacing strategy to evolve without giving it authority to bypass the safety boundary.
+
+This design aims to obtain some utilization benefits of predictive dialing while preserving the deterministic safety characteristics of progressive allocation.
+
+---
+
+## Safety and Correctness
+
+The SmartDialer implementation addresses several important correctness requirements:
+
+- **Agent reservation:** Prevents competing allocation attempts from freely reserving the same available agent.
+- **Borrower allocation:** Uses allocation controls to reduce duplicate concurrent processing.
+- **Safety enforcement:** Routes pacing proposals through the Safety Controller.
+- **State validation:** Restricts agent and call lifecycle transitions.
+- **Event deduplication:** Prevents repeated provider events from causing duplicate processing where supported by the event-processing logic.
+- **Terminal-state protection:** Avoids replacing terminal call states with inappropriate later events.
+- **Recovery:** Identifies stale reservations and supports recovery behavior.
+- **Provider resilience:** Includes circuit-breaker behavior for provider failures.
+
+These controls are implemented and covered to varying extents by the automated tests. The test results demonstrate the tested cases; they should not be interpreted as proof of production-scale distributed correctness.
+
+---
+
+## Failure Handling
+
+The prototype includes logic and tests for representative failure scenarios.
+
+| Scenario | Intended behavior |
+|---|---|
+| Worker interruption | Recover stale reservations according to recovery rules |
+| Provider timeout | Record failure and apply provider health and retry behavior |
+| Duplicate event | Avoid repeating an already-processed state transition |
+| Out-of-order event | Preserve a sensible state rather than blindly applying every event |
+| Agent becomes unavailable | Re-evaluate whether additional calls can safely be allocated |
+| Provider health degradation | Use circuit-breaker behavior and configured fallback logic |
+
+For implementation details, see [`docs/failure_recovery.md`](docs/failure_recovery.md).
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Backend API | Python, FastAPI |
+| Data models | SQLAlchemy and Pydantic |
+| Database | SQLite for local development |
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS |
+| Testing | pytest |
+| API specification | FastAPI-generated OpenAPI |
+| Provider integration | Mock telecom provider adapters |
+| Container support | Docker and Docker Compose configuration |
+
+---
+
+## Project Structure
+
+```text
+CredResolve/
+├── backend/
 │   ├── app/
-│   │   ├── api/            # 14 Modular API Routers (auth, dashboard, queue, borrowers, accounts, payments, ptp, agents, etc.)
-│   │   ├── core/           # Security (bcrypt, JWT), Config (settings), Database engine
-│   │   ├── models/         # SQLAlchemy ORM models with composite indexes
-│   │   ├── schemas/        # Pydantic DTOs for request/response serialization
-│   │   ├── services/       # Cleaning pipeline & rule-based prioritization engine
-│   │   └── main.py         # FastAPI application with static build mounting & Swagger
-│   ├── tests/              # Pytest automated test suite (12 passing tests)
-│   ├── requirements.txt    # Production Python dependencies
-│   └── run.py              # Server execution entry point
-│
-├── data/                   # Dataset directory
-│   ├── raw/                # 17 Extracted CSV datasets
-│   └── credresolve.db      # Indexed SQLite core database (589k records)
-│
-├── Dockerfile              # Production multi-stage Docker build
-├── docker-compose.yml      # Container orchestration
-└── .env.example            # Environment configuration template
+│   │   ├── api/
+│   │   │   └── dialer.py
+│   │   ├── models/
+│   │   │   └── dialer_schema.py
+│   │   ├── services/
+│   │   │   ├── call_allocator.py
+│   │   │   ├── event_processor.py
+│   │   │   ├── pacing_engine.py
+│   │   │   ├── progressive_dialer.py
+│   │   │   ├── providers.py
+│   │   │   ├── safety_controller.py
+│   │   │   ├── simulation.py
+│   │   │   └── state_machines.py
+│   │   └── main.py
+│   ├── tests/
+│   │   └── test_dialer.py
+│   ├── load_test.py
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── api/
+│   │   │   └── client.ts
+│   │   ├── components/
+│   │   ├── pages/
+│   │   │   └── SmartDialer.tsx
+│   │   └── App.tsx
+│   └── package.json
+├── docs/
+│   ├── SMARTDIALER_README.md
+│   ├── architecture_adr.md
+│   ├── architecture_diagrams.md
+│   ├── compliance_matrix.md
+│   └── failure_recovery.md
+├── .env.example
+├── .gitignore
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
 ```
+
+The original CredResolve application files remain part of the repository. The files above highlight the main SmartDialer components and relevant project configuration.
 
 ---
 
-## ⚡ Quickstart Guide
+## Getting Started
 
-### Option 1: One-Command Start (Unified Mode)
+### Prerequisites
 
-The backend is configured to automatically serve both the **REST API** and the **compiled production React frontend** from a single lightweight server:
+Install the following:
 
-```powershell
-# 1. Start application server
-python backend/run.py
-```
-Open your browser at **[http://127.0.0.1:8000](http://127.0.0.1:8000)**.
+- Python 3.12 or a compatible supported Python version.
+- Node.js and npm.
+- Git.
 
----
+Run the commands below from the repository root.
 
-### Option 2: Full Development Mode (Hot-Reload)
+### 1. Set Up the Backend
 
-To run the frontend and backend with hot-reloading for development:
+Open a terminal:
 
-**Terminal 1 — Backend API Server:**
 ```powershell
 cd backend
-python run.py
+python -m venv .venv
 ```
-*API and Swagger Docs will be running at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).*
 
-**Terminal 2 — Frontend Dev Server:**
+Activate the virtual environment on Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Install the backend dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Start the FastAPI server:
+
+```powershell
+python -m uvicorn app.main:app --reload --log-level debug
+```
+
+The backend API will be available at:
+
+- API base: `http://127.0.0.1:8000`
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+
+Keep this terminal running.
+
+### 2. Set Up the Frontend
+
+Open a second terminal at the repository root:
+
 ```powershell
 cd frontend
-npm run dev
+npm install
+npm.cmd run dev
 ```
-*Frontend will be running at [http://localhost:5173](http://localhost:5173) with automatic proxying to `:8000`.*
+
+Open the local URL printed by Vite, typically:
+
+`http://localhost:5173`
+
+Keep the frontend and backend terminals running while using the application.
+
+> **Note:** The frontend API client and development proxy must be configured to reach the local backend. If your environment uses different ports or configuration, follow the values in the frontend and backend configuration files.
 
 ---
 
-### Option 3: Docker Deployment
+## Running Tests
+
+### SmartDialer Backend Tests
+
+The SmartDialer-specific test suite is:
 
 ```powershell
-docker compose up --build
+cd backend
+python -m pytest tests/test_dialer.py -q
 ```
-Open **[http://localhost:8000](http://localhost:8000)**.
 
----
+**Recorded verification result:** 63 tests passed.
 
-## 🔑 Demo Login Accounts
+The suite covers areas including state machines, concurrency-aware reservation, Safety Controller behavior, event processing, crash recovery, provider behavior, and API operations.
 
-CredResolve Intelligence comes pre-seeded with 4 role-based corporate accounts. You can sign in using the **1-Click Demo Profiles** on the login page or enter credentials manually:
+### Original Backend Test Suite
 
-| Role | Email | Password | Full Name | Access & Permissions |
-|---|---|---|---|---|
-| **Admin** | `admin@credresolve.com` | `credresolve123` | Rajesh Sharma | Full administrative control, engine configuration, user audit |
-| **Operations Head** | `manager@credresolve.com` | `credresolve123` | Priya Nair | Campaign analytics, agent scorecards, recovery trend oversight |
-| **Recovery Agent** | `agent@credresolve.com` | `credresolve123` | Anil Verma | Work queue actions, borrower contact logs, PTP recording |
-| **Compliance Auditor** | `auditor@credresolve.com` | `credresolve123` | Kavita Rao | Grievance resolution, Fair Practices Code tracking, dispute reviews |
-
----
-
-## 📊 Mathematical Definitions & Formulas
-
-| Metric | Business Definition | Exact Mathematical Formula |
-|---|---|---|
-| **Total Outstanding Balance** | Aggregate current debt exposure across all loan products. | $\sum \text{outstanding\_amount}$ across all non-settled accounts |
-| **Overdue Balance** | Outstanding balance on accounts past their due date. | $\sum \text{outstanding\_amount} \quad \text{WHERE } \text{dpd} > 0 \text{ AND } \text{status} \notin (\text{PAID}, \text{CLOSED})$ |
-| **Realized Collections** | Total currency successfully settled from borrowers. | $\sum \text{amount} \quad \text{WHERE } \text{payment\_status} = \text{'SUCCESS'}$ |
-| **Collection Rate (%)** | Proportion of delinquent exposure recovered during the cycle. | $\frac{\text{Successful Collections}}{\text{Overdue Balance} + \text{Successful Collections}} \times 100$ |
-| **PTP Fulfillment Rate (%)** | Proportion of resolved commitments honored by borrowers. | $\frac{\text{Kept Promises}}{\text{Kept Promises} + \text{Broken Promises}} \times 100$ |
-| **Complaint Resolution Rate (%)** | Proportion of registered consumer grievances closed or resolved. | $\frac{\text{Resolved Complaints}}{\text{Total Complaints}} \times 100$ |
-
----
-
-## 🧠 Prioritization Engine Scoring Formula
-
-The rule-based prioritization score $S \in [0, 100]$ is computed deterministically as:
-
-$$S = \min\left(100, \, W_{\text{DPD}} + W_{\text{Exposure}} + W_{\text{Risk}} + W_{\text{PTP}} + W_{\text{Resp}}\right)$$
-
-1. **Days Past Due ($W_{\text{DPD}}$, Max 25 pts)**:
-   - $\text{DPD} \ge 90$: **25 pts** (Severe default / imminent write-off)
-   - $60 \le \text{DPD} < 90$: **20 pts** (Late-stage roll risk)
-   - $30 \le \text{DPD} < 60$: **14 pts** (Mid-stage delinquency)
-   - $1 \le \text{DPD} < 30$: **7 pts** (Early warning bucket)
-   - $\text{DPD} = 0$: **0 pts** (Current account)
-
-2. **Outstanding Exposure ($W_{\text{Exposure}}$, Max 25 pts)**:
-   - $\ge ₹500,000$: **25 pts** | $\ge ₹250,000$: **18 pts** | $\ge ₹100,000$: **12 pts** | $< ₹100,000$: **5 pts**
-
-3. **Credit Risk Segment ($W_{\text{Risk}}$, Max 15 pts)**:
-   - `NPA`: **15 pts** | `HIGH`: **12 pts** | `MEDIUM`: **8 pts** | `LOW`: **3 pts**
-
-4. **PTP Commitment History ($W_{\text{PTP}}$, Max 15 pts)**:
-   - Broken PTP: **15 pts** (Breach escalation) | No PTP: **7 pts** | Kept PTP: **5 pts** | Open PTP: **4 pts**
-
-5. **Contact Responsiveness ($W_{\text{Resp}}$, Max 20 pts)**:
-   - Dispute / Refused: **18 pts** (Senior agent required) | No Contact: **14 pts** | Baseline: **10 pts** | Partial Payment: **6 pts**
-
-### Tier Mapping:
-- **CRITICAL**: $S \ge 75$ | **HIGH**: $55 \le S < 75$ | **MEDIUM**: $35 \le S < 55$ | **LOW**: $S < 35$
-
----
-
-## 🧹 Data Cleaning Pipeline Decisions
-
-| Dataset | Problem Identified | Cleaning & Normalization Method |
-|---|---|---|
-| **`agents.csv`** | 30,000 raw rows for 1,000 agents due to historical status changes. | Grouped by `agent_id` and selected latest `updated_at` snapshot. **29,000 duplicate rows purged**, preserving 1,000 clean agents. |
-| **`borrowers.csv`** | 19,585 duplicate rows and 2,913 loan account references with missing borrower IDs. | Deduplicated by `borrower_id` on latest `updated_at`. Synthesized 2,913 placeholder profiles (`is_enriched = False`) to guarantee 100% foreign-key integrity. |
-| **`payments.csv`** | 500 duplicate `payment_id` rows; 8,042 cross-account duplicate transaction references. | Purged 500 duplicate rows. Tagged `is_duplicate_ref = True` to prevent collection total inflation while maintaining full audit trail. |
-| **`calls.csv`** | 1,350 duplicate `call_id` entries; 1,827 calls with null `agent_id`. | Deduplicated by `call_id`. Preserved null agent IDs as automated IVR dialer events. |
-| **`call_dispositions.csv`** | Dual existence of legacy `PROMISE_TO_PAY` (v1) and modern `PTP` (v2). | Mapped and standardized all legacy `PROMISE_TO_PAY` entries to canonical `PTP`. |
-| **`account_status_history.csv`** | Conflicting timestamps where `recorded_at` preceded `event_at` (24,964 instances). | Logged and flagged chronological anomalies for compliance auditing while preserving both timestamps. |
-
----
-
-## 🧪 Automated Testing
-
-CredResolve includes an automated backend test suite covering authentication, API endpoints, database operations, prioritization calculations, compliance guardrails, and data quality audits:
+The original CredResolve backend may have its own test suite. Run it separately if its test file is present:
 
 ```powershell
 cd backend
 python -m pytest tests/test_backend.py -v
 ```
 
-### Test Suite Results:
-```text
-tests/test_backend.py::test_root_endpoint PASSED                         [  8%]
-tests/test_backend.py::test_auth_demo_users PASSED                       [ 16%]
-tests/test_backend.py::test_auth_login_success PASSED                    [ 25%]
-tests/test_backend.py::test_auth_login_invalid PASSED                    [ 33%]
-tests/test_backend.py::test_dashboard_summary PASSED                     [ 41%]
-tests/test_backend.py::test_accounts_list PASSED                         [ 50%]
-tests/test_backend.py::test_borrowers_list PASSED                        [ 58%]
-tests/test_backend.py::test_work_queue PASSED                            [ 66%]
-tests/test_backend.py::test_prioritization_engine_scoring PASSED         [ 75%]
-tests/test_backend.py::test_data_quality_report PASSED                   [ 83%]
-tests/test_backend.py::test_payments_summary PASSED                      [ 91%]
-tests/test_backend.py::test_metric_definitions PASSED                    [100%]
+The result of this original test suite is separate from the SmartDialer test result.
 
-======================= 12 passed, 3 warnings in 4.15s ========================
-```
+### Frontend Production Build
 
-Frontend production verification:
+Run:
+
 ```powershell
 cd frontend
-npm run build
-# ✓ built in 961ms with 0 errors
+npm.cmd run build
 ```
 
+**Recorded verification result:** The TypeScript and Vite production build completed successfully.
+
+The build emitted a warning that the main JavaScript bundle exceeded 500 kB after minification. This did not prevent the build from succeeding.
+
+### Understanding Test Warnings
+
+The backend test run emitted deprecation warnings, including warnings concerning `datetime.utcnow()` and dependencies used by the test client. These warnings did not cause the recorded test run to fail.
+
 ---
 
-## 📖 API Documentation
+## Simulation and Load Testing
 
-Interactive OpenAPI / Swagger documentation is available at:
-- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+The repository includes a simulation component and a basic load-testing utility.
+
+### Simulation Scenarios
+
+The simulator supports scenarios representing different answer-rate and average-talk-time conditions, including:
+
+- Scenario A: lower answer rate.
+- Scenario B: moderate answer rate.
+- Scenario C: higher answer rate.
+- Scenario D: changing conditions.
+
+Provider latency and failures can also be introduced to examine the effect on pacing, call initiation, connection outcomes, and Safety Controller decisions.
+
+Use the SmartDialer interface and the relevant backend endpoints to run the available scenarios.
+
+### Load Testing
+
+A basic load-testing utility is provided at:
+
+[`backend/load_test.py`](backend/load_test.py)
+
+The utility is intended to help explore system behavior under load. Its presence does not imply that the application has been validated at 10,000 agents or at production telecom throughput.
+
+### Scaling Considerations
+
+Potential bottlenecks as the number of agents increases include:
+
+- Database contention during agent and borrower reservation.
+- Concurrent state updates and transaction locking.
+- Provider latency and timeouts.
+- Event-processing throughput.
+- Retry volume and circuit-breaker coordination.
+- Large campaign queries and simulation workloads.
+
+Further scaling work would require workload-specific load tests, database profiling, and validation of concurrency guarantees under the intended deployment architecture.
 
 ---
 
-## 🛡️ License & Compliance Notice
+## API Documentation
 
-This platform complies with the **Reserve Bank of India (RBI) Fair Practices Code for Lenders**, the **Consumer Protection Act (2019)**, and international **GDPR PII Data Protection Standards**. Simulation data only; real telephony calls, WhatsApp messages, and monetary transfers are strictly disabled in development environments.
+When the backend is running, use the automatically generated API documentation:
+
+- **Swagger UI:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
+The API documentation lists the routes exposed by the running application.
+
+---
+
+## Limitations
+
+This repository contains a functional prototype, not a production-ready telephony platform.
+
+- Telecom interactions use mock providers; live calls are not required for the demonstrated workflows.
+- Performance and concurrency guarantees must be validated against the intended production database and deployment topology.
+- Load-testing results should be interpreted according to the environment and workload actually tested.
+- Automated test results describe the cases covered by the tests and do not prove that every failure mode has been eliminated.
+- Production deployment would require appropriate authentication and authorization review, secrets management, observability, operational monitoring, and compliance validation.
+
+---
+
+## Documentation
+
+Additional SmartDialer documentation is available in the `docs/` directory:
+
+- [`docs/SMARTDIALER_README.md`](docs/SMARTDIALER_README.md) — detailed SmartDialer implementation and usage notes.
+- [`docs/architecture_adr.md`](docs/architecture_adr.md) — architecture decision record.
+- [`docs/architecture_diagrams.md`](docs/architecture_diagrams.md) — architecture and flow diagrams.
+- [`docs/compliance_matrix.md`](docs/compliance_matrix.md) — requirement and compliance mapping.
+- [`docs/failure_recovery.md`](docs/failure_recovery.md) — failure handling and recovery design.
+
+---
+
+## Project Goal
+
+The central design goal is to obtain as much of the utilization benefit of predictive dialing as possible while retaining the deterministic safety characteristics of progressive dialing.
+
+The pacing engine may recommend how many calls to start. The Safety Controller must independently decide how many calls are permitted. Keeping that boundary explicit is the core principle of this SmartDialer prototype.
