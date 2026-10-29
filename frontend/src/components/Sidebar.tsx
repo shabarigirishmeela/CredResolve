@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Sparkles, Users, CreditCard,
   Receipt, CalendarCheck2, UserCheck, Megaphone,
   PhoneCall, MapPin, ShieldAlert, FileSpreadsheet,
-  FileText, Settings, LogOut
+  FileText, Settings, LogOut, Phone
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,7 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
     { id: 'complaints', label: 'Complaints & Compliance', icon: <ShieldAlert className="w-4 h-4 text-rose-400" />, badge: 'Fair Code' },
     { id: 'data-quality', label: 'Data Quality & Pipeline', icon: <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> },
     { id: 'reports', label: 'Reports & Exports', icon: <FileText className="w-4 h-4" /> },
-    { id: 'settings', label: 'Engine Settings', icon: <Settings className="w-4 h-4" /> }
+    { id: 'settings', label: 'Engine Settings', icon: <Settings className="w-4 h-4" /> },
+    { id: 'smart-dialer', label: 'SmartDialer Engine', icon: <Phone className="w-4 h-4 text-indigo-400" />, badge: 'Live' },
   ];
 
   return (
